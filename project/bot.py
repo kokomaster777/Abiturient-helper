@@ -9,7 +9,7 @@ import numpy as np
 import joblib
 
 # Создаем экземпляры бота и диспетчера
-API_TOKEN = "7654821181:AAG0mL--V7K_8zKXQOWXPWb-yd2EQlJCCKU"
+API_TOKEN = "TOKEN"
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 
