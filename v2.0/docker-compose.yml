@@ -1,0 +1,39 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped 
+    env_file:
+      - .env
+    networks:
+      - my_network
+
+  redis:
+    image: redis:latest 
+    container_name: redis_container 
+    ports:
+      - "6377:6379"  
+    volumes:
+      - redis_data:/data
+    env_file:
+      - .env 
+    networks:
+      - my_network
+
+  postgres:
+    image: postgres:15.1
+    restart: unless-stopped 
+    env_file:
+      - .env
+    volumes: 
+      - ./data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    networks:
+      - my_network
+
+volumes:
+  redis_data:
+
+networks:
+  my_network:
+    driver: bridge
