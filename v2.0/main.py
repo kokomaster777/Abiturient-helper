@@ -9,6 +9,10 @@ from contextlib import closing
 import requests
 import asyncio
 import os
+from dotenv import load_dotenv
+
+# Загрузка переменных окружения
+load_dotenv()
 
 # Настройка логирования
 logging.basicConfig(
@@ -21,19 +25,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Конфигурация
+# Конфигурация из переменных окружения
 CONFIG = {
-    "response_delay": 0.3,  # минуты
-    "cleanup_interval": 24,  # часы
-    "max_questions_per_user": 50,  # вопросов в час
-    "allowed_chat_id": -100,  # ID вашего чата
-    "allowed_topic_id": 2  # ID темы, где работает бот
+    "response_delay": float(os.getenv('RESPONSE_DELAY', 0.3)),  # минуты
+    "cleanup_interval": int(os.getenv('CLEANUP_INTERVAL', 24)),  # часы
+    "max_questions_per_user": int(os.getenv('MAX_QUESTIONS_PER_USER', 50)),  # вопросов в час
+    "allowed_chat_id": int(os.getenv('ALLOWED_CHAT_ID')),  # ID вашего чата
+    "allowed_topic_id": int(os.getenv('ALLOWED_TOPIC_ID', 2))  # ID темы, где работает бот
 }
 
-# API ключи (замените на свои)
-IAM_TOKEN = ""  # Замените на ваш токен
-FOLDER_ID = ""  # Замените на ваш folder_id
-BOT_TOKEN = ""
+# API ключи из переменных окружения
+IAM_TOKEN = os.getenv('IAM_TOKEN')
+FOLDER_ID = os.getenv('FOLDER_ID')
+BOT_TOKEN = os.getenv('BOT_TOKEN')
 
 # Инициализация бота
 bot = Bot(token=BOT_TOKEN)
