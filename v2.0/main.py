@@ -406,6 +406,11 @@ async def handle_message(message: types.Message):
         if message.from_user.is_bot:
             return
 
+        # Проверяем, содержит ли сообщение вопрос (знак "?")
+        if '?' not in message.text:
+            logger.info(f"Ignoring message without question mark: {message.text}")
+            return
+
         # Проверяем лимит
         if not await check_user_limit(message.from_user.id):
             await message.reply(
