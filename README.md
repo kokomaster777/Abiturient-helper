@@ -29,5 +29,5 @@ pip install -r requirements.txt
 7. Вставить ваш токен бота из telegram в файле bot.py
 8. Запустить бота:
 ```
-python bot.py
+python main.py
 ```
