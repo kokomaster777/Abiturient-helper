@@ -373,12 +373,12 @@ async def handle_message(message: types.Message):
     """Обработка входящих сообщений"""
     try:
         # Проверяем чат и тему
-        if message.chat.id != CONFIG['allowed_chat_id']:
-            return
+        #if message.chat.id != CONFIG['allowed_chat_id']:
+            #return
             
         topic_id = getattr(message, 'message_thread_id', 1)
-        if topic_id != CONFIG['allowed_topic_id']:
-            return
+        #if topic_id != CONFIG['allowed_topic_id']:
+            #return
 
         # Если это ответ админа на сообщение
         if message.reply_to_message:
