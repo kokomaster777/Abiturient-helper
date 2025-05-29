@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 # Конфигурация из переменных окружения
 CONFIG = {
-    "response_delay": float(os.getenv('RESPONSE_DELAY', 0.1)),  # минуты
+    "response_delay": float(os.getenv('RESPONSE_DELAY', 0.01)),  # минуты
     "cleanup_interval": int(os.getenv('CLEANUP_INTERVAL', 24)),  # часы
     "max_questions_per_user": int(os.getenv('MAX_QUESTIONS_PER_USER', 50)),  # вопросов в час
     "allowed_chat_id": int(os.getenv('ALLOWED_CHAT_ID')),  # ID вашего чата
