@@ -9,6 +9,8 @@ from contextlib import closing
 import requests
 import asyncio
 import os
+import re
+
 from dotenv import load_dotenv
 
 # Загрузка переменных окружения
