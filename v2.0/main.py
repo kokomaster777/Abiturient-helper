@@ -304,7 +304,7 @@ async def send_delayed_response(chat_id: int, message_id: int, topic_id: int):
             chat_id=chat_id,
             message_thread_id=topic_id,
             text=answer,
-            reply_to_message_id=message_id
+            reply_to_message_id=message_id,
             parse_mode="MarkdownV2"
         )
 
