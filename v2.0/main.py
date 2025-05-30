@@ -301,7 +301,7 @@ async def send_delayed_response(chat_id: int, message_id: int, topic_id: int):
         # Получаем и отправляем ответ
         answer = get_answer(question[0][0])
         
-        answer = answer.replace("**", "<b>").replace("**", "</b>")
+        answer = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', answer)
         
         await bot.send_message(
             chat_id=chat_id,
