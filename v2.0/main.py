@@ -300,6 +300,9 @@ async def send_delayed_response(chat_id: int, message_id: int, topic_id: int):
 
         # Получаем и отправляем ответ
         answer = get_answer(question[0][0])
+        
+        answer = answer.replace("**", "<b>").replace("**", "</b>")
+        
         await bot.send_message(
             chat_id=chat_id,
             message_thread_id=topic_id,
