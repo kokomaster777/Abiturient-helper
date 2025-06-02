@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 # Конфигурация из переменных окружения
 CONFIG = {
-    "response_delay": float(os.getenv('RESPONSE_DELAY', 0.01)),  # минуты
+    "response_delay": float(os.getenv('RESPONSE_DELAY', 0.3)),  # минуты
     "cleanup_interval": int(os.getenv('CLEANUP_INTERVAL', 24)),  # часы
     "max_questions_per_user": int(os.getenv('MAX_QUESTIONS_PER_USER', 50)),  # вопросов в час
     "allowed_chat_id": int(os.getenv('ALLOWED_CHAT_ID')),  # ID вашего чата
@@ -379,12 +379,12 @@ async def handle_message(message: types.Message):
     """Обработка входящих сообщений"""
     try:
         # Проверяем чат и тему
-        #if message.chat.id != CONFIG['allowed_chat_id']:
-            #return
+        if message.chat.id != CONFIG['allowed_chat_id']:
+            return
             
         topic_id = getattr(message, 'message_thread_id', 1)
-        #if topic_id != CONFIG['allowed_topic_id']:
-            #return
+        if topic_id != CONFIG['allowed_topic_id']:
+            return
 
         # Если это ответ админа на сообщение
         if message.reply_to_message:
