@@ -264,7 +264,7 @@ def get_answer(question: str) -> str:
 
         return response['result']['alternatives'][0]['message']['text']
     except Exception as e:
-        logger.error(f"Yandex API error: {str(e})")
+        logger.error(f"Yandex API error: {str(e)}")
         return "Не удалось обработать запрос. Попробуйте позже."
 
 async def send_delayed_response(chat_id: int, message_id: int, topic_id: int):
