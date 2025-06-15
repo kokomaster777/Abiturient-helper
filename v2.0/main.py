@@ -13,7 +13,6 @@ import os
 import re
 
 from dotenv import load_dotenv
-
 # Загрузка переменных окружения
 load_dotenv()
 
