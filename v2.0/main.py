@@ -13,6 +13,7 @@ import os
 import re
 
 from dotenv import load_dotenv
+
 # Загрузка переменных окружения
 load_dotenv()
 
@@ -72,14 +73,56 @@ def init_db():
 
 init_db()
 
+def init_prompt_db():
+    with closing(sqlite3.connect('system_prompt.db')) as conn:
+        conn.execute('''CREATE TABLE IF NOT EXISTS prompts
+                      (id INTEGER PRIMARY KEY,
+                       content TEXT NOT NULL,
+                       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+        
+        # Добавляем дефолтный промпт, если таблица пуста
+        if not conn.execute("SELECT 1 FROM prompts LIMIT 1").fetchone():
+            default_prompt = "Ты — представитель приёмной комиссии УрФУ."
+            conn.execute("INSERT INTO prompts (content) VALUES (?)", (default_prompt,))
+            conn.commit()
+
+init_prompt_db()
+
+def init_feedback_db():
+    with closing(sqlite3.connect('feedback_log.db')) as conn:
+        conn.execute('''CREATE TABLE IF NOT EXISTS feedbacks
+                      (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       message_id INTEGER NOT NULL,
+                       question_text TEXT NOT NULL,
+                       bot_answer TEXT NOT NULL,
+                       feedback TEXT NOT NULL,
+                       user_id INTEGER NOT NULL,
+                       timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+        conn.commit()
+        logger.info("Feedback database initialized")
+
+init_feedback_db()
+
+def init_questions_log_db():
+    with closing(sqlite3.connect('questions_log.db')) as conn:
+        conn.execute('''CREATE TABLE IF NOT EXISTS questions_log
+                      (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       question TEXT NOT NULL,
+                       timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+        conn.commit()
+        logger.info("Questions log database initialized")
+
+init_questions_log_db()
 
 def load_system_prompt() -> str:
     try:
-        with open("system_prompt.txt", "r", encoding="utf-8") as f:
-            return f.read()
+        with closing(sqlite3.connect('system_prompt.db')) as conn:
+            cursor = conn.execute("SELECT content FROM prompts ORDER BY id DESC LIMIT 1")
+            result = cursor.fetchone()
+            return result[0] if result else "Дефолтный промпт"
     except Exception as e:
-        logger.error(f"Ошибка чтения system_prompt.txt: {e}")
-        return "Ты — представитель приёмной комиссии УрФУ."
+        logger.error(f"Ошибка загрузки промпта: {e}")
+        return "Дефолтный промпт (ошибка)"
     
 def get_answer(question: str) -> str:
     try:
@@ -127,27 +170,37 @@ def get_feedback_keyboard(message_id: int) -> InlineKeyboardMarkup:
     return keyboard
 
 
-def save_feedback_to_file(message_id: int, feedback: str, user_id: int):
+def save_feedback_to_file(message_id: int, feedback: str, user_id: int, bot_answer: str):
     try:
         # Получаем вопрос по message_id
         result = db_execute("SELECT question FROM questions WHERE msg_id=?", (message_id,))
         question_text = result[0][0] if result else "[вопрос не найден]"
 
-        with open("feedback_log.txt", "a", encoding="utf-8") as f:
-            f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Вопрос: \"{question_text}\" | Оценка: {feedback} | От пользователя: {user_id}\n")
+        # Сохраняем в базу данных
+        with closing(sqlite3.connect('feedback_log.db')) as conn:
+            conn.execute(
+                "INSERT INTO feedbacks (message_id, question_text, bot_answer, feedback, user_id) VALUES (?, ?, ?, ?, ?)",
+                (message_id, question_text, bot_answer, feedback, user_id)
+            )
+            conn.commit()
 
         logger.info(f"Оценка сохранена: {'лайк' if feedback == '👍' else 'дизлайк'} на вопрос {message_id}")
     except Exception as e:
-        logger.error(f"Ошибка записи оценки в файл: {e}")
+        logger.error(f"Ошибка записи оценки: {e}")
 
-#Сохраняет вопрос в файл questions_log.txt
 def save_question_to_file(question: str):
-    """Сохраняет вопрос в отдельный файл"""
+    """Сохраняет вопрос в лог"""
     try:
-        with open('questions_log.txt', 'a', encoding='utf-8') as f:
-            f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {question}\n")
+
+        # Сохраняем в базу данных
+        with closing(sqlite3.connect('questions_log.db')) as conn:
+            conn.execute(
+                "INSERT INTO questions_log (question) VALUES (?)",
+                (question,)
+            )
+            conn.commit()
     except Exception as e:
-        logger.error(f"Failed to save question to file: {e}")
+        logger.error(f"Failed to save question: {e}")
 
 
 async def send_delayed_response(chat_id: int, message_id: int, topic_id: int):
@@ -188,14 +241,13 @@ async def send_delayed_response(chat_id: int, message_id: int, topic_id: int):
         
         answer = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', answer)
         
-        await bot.send_message(
+        sent_message = await bot.send_message(
             chat_id=chat_id,
             message_thread_id=topic_id,
             text=answer,
             reply_to_message_id=message_id,
             parse_mode="HTML",
             reply_markup=get_feedback_keyboard(message_id)
-
         )
 
         # Помечаем как отвеченный
@@ -204,8 +256,11 @@ async def send_delayed_response(chat_id: int, message_id: int, topic_id: int):
             (message_id,),
             commit=True
         )
+        
+        return answer  # Возвращаем ответ бота для сохранения в логе
     except Exception as e:
         logger.error(f"Response error: {e}")
+        return None
 
 def db_execute(query: str, params=(), commit: bool = False):
     """Выполнение SQL запроса"""
@@ -315,7 +370,7 @@ async def handle_message(message: types.Message):
             commit=True
         )
         
-        save_question_to_file(message.text) #сохраняем вопрос в файл
+        save_question_to_file(message.text) #сохраняем вопрос в лог
 
         update_user_limit(message.from_user.id)
 
@@ -348,15 +403,17 @@ async def handle_feedback(callback_query: types.CallbackQuery):
         feedback_type, msg_id = callback_query.data.split(':')
         user_id = callback_query.from_user.id
         feedback_text = '👍' if feedback_type == 'like' else '👎'
+        
+        # Получаем ответ бота из сообщения
+        bot_answer = callback_query.message.text
 
-        save_feedback_to_file(int(msg_id), feedback_text, user_id)
+        save_feedback_to_file(int(msg_id), feedback_text, user_id, bot_answer)
 
         await callback_query.answer("Спасибо за вашу оценку!", show_alert=False)
         await callback_query.message.edit_reply_markup(reply_markup=None)
     except Exception as e:
         logger.error(f"Ошибка обработки оценки: {e}")
         await callback_query.answer("Ошибка при попытке сохранить оценку.")
-
 
 
 async def on_startup(dp):
