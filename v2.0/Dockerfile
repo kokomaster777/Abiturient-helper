@@ -16,6 +16,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY bot ./bot
 COPY main.py .
 COPY .env .
-
+COPY feedback_log.db
+COPY questions_log.db
+COPY admin_bot.py .
 # Command to run the bot
-CMD ["python", "main.py"]
+CMD python main.py & python admin_bot.py & wait
